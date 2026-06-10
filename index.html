@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@arco-design/web-vue@2.58.0/dist/arco.css">
+    <style>
+        /* ========================================
+           Arco Design Dark Theme Tokens
+           来源：arco.css @media (prefers-color-scheme: dark)
+           ======================================== */
+        :root {
+            /* Background */
+            --color-bg-1: #17171a;
+            --color-bg-2: #232324;
+            --color-bg-3: #2a2a2b;
+            --color-bg-4: #313132;
+            --color-bg-5: #373739;
+
+            /* Text */
+            --color-text-1: rgba(255, 255, 255, 0.9);
+            --color-text-2: rgba(255, 255, 255, 0.7);
+            --color-text-3: rgba(255, 255, 255, 0.5);
+            --color-text-4: rgba(255, 255, 255, 0.3);
+
+            /* Fill */
+            --color-fill-1: rgba(255, 255, 255, 0.04);
+            --color-fill-2: rgba(255, 255, 255, 0.08);
+            --color-fill-3: rgba(255, 255, 255, 0.12);
+            --color-fill-4: rgba(255, 255, 255, 0.16);
+
+            /* Border */
+            --color-border: #333335;
+
+            /* Primary (Arcoblue) */
+            --color-primary: #3c7eff;
+            --color-primary-light-1: rgba(60, 126, 255, 0.2);
+            --color-primary-light-2: rgba(60, 126, 255, 0.35);
+            --color-primary-light-3: rgba(60, 126, 255, 0.5);
+
+            /* Success (Green) */
+            --color-success: #27c46e;
+            --color-success-light-1: rgba(39, 196, 110, 0.2);
+
+            /* Danger (Red) */
+            --color-danger: #f76965;
+            --color-danger-light-1: rgba(247, 105, 101, 0.2);
+
+            /* Warning (Orange) */
+            --color-warning: #ff9626;
+
+            /* Border Radius */
+            --border-radius-small: 2px;
+            --border-radius-medium: 4px;
+            --border-radius-large: 8px;
+
+            /* Typography */
+            --font-family: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Noto Sans", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            --font-mono: "SF Mono", "Fira Code", "Cascadia Code", Consolas, monospace;
+
+            /* JSON Syntax Colors (基于 Arco 色板) */
+            --json-key: #3c7eff;
+            --json-string: #27c46e;
+            --json-number: #ff9626;
+            --json-boolean: #be8eff;
+            --json-null: var(--color-text-3);
+            --json-bracket: var(--color-text-3);
+        }
+
+        /* ========================================
+           Arco Design Light Theme Tokens
+           来源：arco.css @media (prefers-color-scheme: light)
+           ======================================== */
+        [data-theme="light"] {
+            /* Background */
+            --color-bg-1: #ffffff;
+            --color-bg-2: #f7f8fa;
+            --color-bg-3: #f2f3f5;
+            --color-bg-4: #e5e6eb;
+            --color-bg-5: #c9cdd4;
+
+            /* Text */
+            --color-text-1: rgba(0, 0, 0, 0.9);
+            --color-text-2: rgba(0, 0, 0, 0.7);
+            --color-text-3: rgba(0, 0, 0, 0.5);
+            --color-text-4: rgba(0, 0, 0, 0.3);
+
+            /* Fill */
+            --color-fill-1: rgba(0, 0, 0, 0.04);
+            --color-fill-2: rgba(0, 0, 0, 0.08);
+            --color-fill-3: rgba(0, 0, 0, 0.12);
+            --color-fill-4: rgba(0, 0, 0, 0.16);
+
+            /* Border */
+            --color-border: #e5e6eb;
+
+            /* Primary */
+            --color-primary: #165dff;
+            --color-primary-light-1: rgba(22, 93, 255, 0.1);
+            --color-primary-light-2: rgba(22, 93, 255, 0.2);
+            --color-primary-light-3: rgba(22, 93, 255, 0.35);
+
+            /* Success */
+            --color-success: #00b42a;
+            --color-success-light-1: rgba(0, 180, 42, 0.1);
+
+            /* Danger */
+            --color-danger: #f53f3f;
+            --color-danger-light-1: rgba(245, 63, 63, 0.1);
+
+            /* Warning */
+            --color-warning: #ff7d00;
+
+            /* JSON Syntax Colors (亮色) */
+            --json-key: #165dff;
+            --json-string: #00b42a;
+            --json-number: #ff7d00;
+            --json-boolean: #722ed1;
+            --json-text: rgba(0, 0, 0, 0.65);
+            --json-null: var(--color-text-3);
+            --json-bracket: var(--color-text-3);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: var(--font-family);
+            background: var(--color-bg-1);
+            color: var(--color-text-1);
+            height: 100vh;
+            overflow: hidden;
+            font-size: 14px;
+            line-height: 1.5715;
+        }
+
+        /* ===== App Shell ===== */
+        .app-shell { display: flex; flex-direction: column; height: 100vh; }
+
+        /* ===== Header ===== */
+        .header {
+            height: 52px;
+            background: var(--color-bg-2);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .header-input {
+            flex: 1;
+            height: 32px;
+            background: var(--color-bg-1);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-medium);
+            color: var(--color-text-1);
+            padding: 0 12px;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            transition: border-color 0.2s;
+        }
+        .header-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px var(--color-primary-light-1);
+        }
+        .header-input::placeholder { color: var(--color-text-4); }
+
+        /* Arco-style Buttons */
+        .btn {
+            height: 32px;
+            padding: 0 15px;
+            border-radius: var(--border-radius-medium);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0, 0, 1, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+            border: 1px solid transparent;
+        }
+        .btn-primary {
+            background: var(--color-primary);
+            color: #fff;
+            border-color: var(--color-primary);
+        }
+        .btn-primary:hover {
+            background: #5a94ff;
+            border-color: #5a94ff;
+        }
+        .btn-primary:active {
+            background: #2d6adf;
+            border-color: #2d6adf;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-text-2);
+            border-color: var(--color-border);
+        }
+        .btn-secondary:hover {
+            background: var(--color-fill-2);
+            color: var(--color-text-1);
+            border-color: var(--color-text-4);
+        }
+        .btn-text {
+            background: transparent;
+            color: var(--color-text-3);
+            border: none;
+            padding: 0 8px;
+        }
+        .btn-text:hover {
+            background: var(--color-fill-2);
+            color: var(--color-text-1);
+        }
+        .btn-danger {
+            background: transparent;
+            color: var(--color-danger);
+            border-color: var(--color-danger);
+        }
+        .btn-danger:hover {
+            background: var(--color-danger-light-1);
+        }
+
+        /* ===== Main Layout ===== */
+        .main { display: flex; flex: 1; overflow: hidden; }
+
+        /* ===== Sidebar (Navigation Rail) ===== */
+        .nav-rail {
+            width: 48px;
+            background: var(--color-bg-2);
+            border-right: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+        .nav-btn {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--border-radius-medium);
+            cursor: pointer;
+            color: var(--color-text-3);
+            transition: all 0.2s;
+            border: none;
+            background: transparent;
+        }
+        .nav-btn:hover {
+            background: var(--color-fill-2);
+            color: var(--color-text-2);
+        }
+        .nav-btn.active {
+            background: var(--color-primary-light-1);
+            color: var(--color-primary);
+        }
+        .nav-btn svg { width: 20px; height: 20px; }
+        .nav-sep {
+            width: 24px;
+            height: 1px;
+            background: var(--color-border);
+            margin: 4px 0;
+        }
+
+        /* ===== Content ===== */
+        .content { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* ===== Toolbar (Path Bar) ===== */
+        .toolbar {
+            height: 40px;
+            background: var(--color-bg-2);
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 13px;
+            color: var(--color-text-3);
+            flex: 1;
+            overflow: hidden;
+        }
+        .breadcrumb-item {
+            padding: 2px 8px;
+            border-radius: var(--border-radius-small);
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .breadcrumb-item:hover {
+            background: var(--color-fill-2);
+            color: var(--color-text-2);
+        }
+        .breadcrumb-item.active {
+            background: var(--color-fill-2);
+            color: var(--color-primary);
+        }
+        .breadcrumb-sep {
+            color: var(--color-text-4);
+            font-size: 12px;
+        }
+        .search-trigger {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: var(--color-bg-1);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-medium);
+            color: var(--color-text-4);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .search-trigger:hover {
+            border-color: var(--color-text-4);
+            color: var(--color-text-3);
+        }
+        .search-trigger kbd {
+            background: var(--color-fill-2);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-family: var(--font-family);
+            font-size: 11px;
+        }
+
+        /* ===== View Container ===== */
+        .view-wrap { flex: 1; display: flex; overflow: hidden; }
+
+        /* ===== Column View ===== */
+        .column-view {
+            flex: 1;
+            display: flex;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        .column-view::-webkit-scrollbar { height: 6px; }
+        .column-view::-webkit-scrollbar-track { background: transparent; }
+        .column-view::-webkit-scrollbar-thumb { background: var(--color-fill-3); border-radius: 3px; }
+
+        .column {
+            min-width: 280px;
+            max-width: 360px;
+            border-right: 1px solid var(--color-border);
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+        .column::-webkit-scrollbar { width: 6px; }
+        .column::-webkit-scrollbar-track { background: transparent; }
+        .column::-webkit-scrollbar-thumb { background: var(--color-fill-3); border-radius: 3px; }
+
+        .col-header {
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--color-text-1);
+            border-bottom: 1px solid var(--color-border);
+            position: sticky;
+            top: 0;
+            background: var(--color-bg-1);
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .col-header svg { width: 16px; height: 16px; }
+
+        .col-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 14px;
+            cursor: pointer;
+            gap: 8px;
+            transition: background 0.15s;
+            border-left: 2px solid transparent;
+        }
+        .col-item:hover { background: var(--color-fill-1); }
+        .col-item.selected {
+            background: var(--color-primary-light-1);
+            border-left-color: var(--color-primary);
+        }
+        .col-item-key {
+            flex: 1;
+            font-size: 13px;
+            color: var(--color-text-1);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .col-item-value {
+            font-size: 12px;
+            color: var(--color-text-4);
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-family: var(--font-mono);
+        }
+        .col-item-arrow {
+            width: 14px;
+            height: 14px;
+            color: var(--color-text-4);
+            flex-shrink: 0;
+        }
+        .col-item-count {
+            font-size: 11px;
+            color: var(--color-text-4);
+            white-space: nowrap;
+        }
+
+        /* ===== Info Panel ===== */
+        .info-panel {
+            width: 360px;
+            background: var(--color-bg-2);
+            border-left: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .info-panel.hidden { display: none; }
+
+        .info-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .info-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-text-1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .info-meta {
+            font-size: 12px;
+            color: var(--color-text-3);
+            margin-top: 4px;
+        }
+
+        .info-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--color-border);
+            background: var(--color-bg-1);
+        }
+        .info-tab {
+            flex: 1;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--color-text-3);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .info-tab:hover { color: var(--color-text-2); }
+        .info-tab.active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+
+        .info-content {
+            flex: 1;
+            overflow: auto;
+            position: relative;
+        }
+        .info-content::-webkit-scrollbar { width: 6px; }
+        .info-content::-webkit-scrollbar-track { background: transparent; }
+        .info-content::-webkit-scrollbar-thumb { background: var(--color-fill-3); border-radius: 3px; }
+
+        .copy-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1;
+            height: 28px;
+            padding: 0 10px;
+            border-radius: var(--border-radius-medium);
+            background: var(--color-bg-3);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-3);
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            background: var(--color-fill-2);
+            color: var(--color-text-2);
+            border-color: var(--color-text-4);
+        }
+        .copy-btn.copied {
+            background: var(--color-success-light-1);
+            color: var(--color-success);
+            border-color: var(--color-success);
+        }
+
+        /* ===== JSON Display ===== */
+        .json-display {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            line-height: 1.7;
+            padding: 12px 0;
+        }
+        .json-line {
+            display: flex;
+            padding: 0 14px;
+            transition: background 0.1s;
+        }
+        .json-line:hover { background: var(--color-fill-1); }
+        .json-line-num {
+            width: 36px;
+            text-align: right;
+            color: var(--color-text-4);
+            user-select: none;
+            flex-shrink: 0;
+            padding-right: 12px;
+        }
+        .json-line-content { flex: 1; white-space: pre; }
+        .json-key { color: var(--json-key); }
+        .json-string { color: var(--json-string); }
+        .json-number { color: var(--json-number); }
+        .json-boolean { color: var(--json-boolean); }
+        .json-null { color: var(--json-null); font-style: italic; }
+        .json-bracket { color: var(--json-bracket); }
+
+        /* ===== Tree View ===== */
+        .tree-view { flex: 1; overflow: auto; padding: 4px 0; }
+        .tree-view::-webkit-scrollbar { width: 6px; }
+        .tree-view::-webkit-scrollbar-track { background: transparent; }
+        .tree-view::-webkit-scrollbar-thumb { background: var(--color-fill-3); border-radius: 3px; }
+
+        .tree-node { user-select: none; }
+        .tree-row {
+            display: flex;
+            align-items: center;
+            padding: 4px 14px;
+            cursor: pointer;
+            gap: 6px;
+            transition: background 0.15s;
+            height: 32px;
+        }
+        .tree-row:hover { background: var(--color-fill-1); }
+        .tree-row.selected { background: var(--color-primary-light-1); }
+
+        .tree-toggle {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.2s;
+            color: var(--color-text-4);
+        }
+        .tree-toggle.expanded { transform: rotate(90deg); }
+        .tree-toggle.empty { visibility: hidden; }
+        .tree-toggle svg { width: 12px; height: 12px; }
+
+        .tree-indent {
+            display: inline-block;
+            width: 20px;
+            flex-shrink: 0;
+            position: relative;
+        }
+        .tree-indent::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+        }
+        .tree-indent.d0::before { background: rgba(60, 126, 255, 0.15); }
+        .tree-indent.d1::before { background: rgba(190, 142, 255, 0.15); }
+        .tree-indent.d2::before { background: rgba(39, 196, 110, 0.15); }
+        .tree-indent.d3::before { background: rgba(255, 150, 38, 0.15); }
+        .tree-indent.d4::before { background: rgba(190, 142, 255, 0.15); }
+        .tree-indent.d5::before { background: rgba(60, 126, 255, 0.15); }
+
+        .tree-icon { width: 14px; height: 14px; flex-shrink: 0; }
+        .tree-key { font-size: 13px; color: var(--json-key); margin-right: 4px; }
+        .tree-colon { color: var(--color-text-4); margin-right: 6px; }
+        .tree-value { font-size: 13px; }
+        .tree-value.string { color: var(--json-string); }
+        .tree-value.number { color: var(--json-number); }
+        .tree-value.boolean { color: var(--json-boolean); }
+        .tree-value.null { color: var(--json-null); font-style: italic; }
+        .tree-meta {
+            margin-left: auto;
+            font-size: 11px;
+            color: var(--color-text-4);
+            white-space: nowrap;
+        }
+        .tree-children { overflow: hidden; }
+        .tree-children.collapsed { display: none; }
+
+        /* ===== JSON Editor ===== */
+        .json-editor { flex: 1; overflow: auto; }
+        .json-editor::-webkit-scrollbar { width: 6px; }
+        .json-editor::-webkit-scrollbar-track { background: transparent; }
+        .json-editor::-webkit-scrollbar-thumb { background: var(--color-fill-3); border-radius: 3px; }
+
+        /* ===== Search Overlay ===== */
+        .search-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--color-mask-bg, rgba(23, 23, 26, 0.6));
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            padding-top: 120px;
+            backdrop-filter: blur(4px);
+        }
+        .search-overlay.hidden { display: none; }
+        .search-box {
+            width: 520px;
+            max-height: 420px;
+            background: var(--color-bg-5);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-large);
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+        .search-input-wrap {
+            display: flex;
+            align-items: center;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--color-border);
+            gap: 10px;
+        }
+        .search-input-wrap svg { width: 18px; height: 18px; color: var(--color-text-4); flex-shrink: 0; }
+        .search-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--color-text-1);
+            font-size: 15px;
+            outline: none;
+        }
+        .search-input::placeholder { color: var(--color-text-4); }
+        .search-results { max-height: 320px; overflow-y: auto; }
+        .search-results::-webkit-scrollbar { width: 6px; }
+        .search-results::-webkit-scrollbar-track { background: transparent; }
+        .search-results::-webkit-scrollbar-thumb { background: var(--color-fill-3); border-radius: 3px; }
+        .search-result {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            cursor: pointer;
+            gap: 10px;
+            transition: background 0.15s;
+        }
+        .search-result:hover { background: var(--color-fill-2); }
+        .search-result.selected { background: var(--color-primary); }
+        .search-result-path {
+            font-size: 12px;
+            color: var(--color-text-4);
+            font-family: var(--font-mono);
+        }
+        .search-result-value {
+            font-size: 13px;
+            color: var(--color-text-1);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .search-hint {
+            padding: 10px 16px;
+            font-size: 11px;
+            color: var(--color-text-4);
+            border-top: 1px solid var(--color-border);
+            display: flex;
+            gap: 16px;
+        }
+        .search-hint kbd {
+            background: var(--color-fill-2);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        /* ===== Empty State ===== */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-4);
+            gap: 16px;
+        }
+        .empty-state-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: var(--color-fill-1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .empty-state-icon svg { width: 28px; height: 28px; opacity: 0.5; }
+        .empty-state p { font-size: 14px; }
+        .empty-state .hint { font-size: 12px; color: var(--color-text-4); }
+
+        /* ===== Scrollbar (全局) ===== */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--color-fill-3); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-fill-4); }
+        ::-webkit-scrollbar-corner { background: transparent; }
+    </style>
+</head>
+<body arco-theme="dark">
+
+<div id="app">
+    <div class="app-shell">
+        <!-- Header -->
+        <div class="header">
+            <input
+                class="header-input"
+                v-model="input"
+                placeholder="粘贴 JSON / Python 字典 / 转义过的 JSON 字符串…"
+                @keydown.ctrl.enter="convert"
+                @keydown.meta.enter="convert"
+            />
+            <button class="btn btn-text" @click="toggleTheme" :title="themeLabel">
+                <!-- Monitor (system) -->
+                <svg v-if="theme === 'system'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:18px;height:18px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <!-- Sun (light) -->
+                <svg v-else-if="theme === 'light'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:18px;height:18px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                <!-- Moon (dark) -->
+                <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:18px;height:18px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+            <button class="btn btn-primary" @click="convert">转换</button>
+            <button class="btn btn-secondary" @click="copyJson">复制</button>
+            <button class="btn btn-danger" @click="clearAll">清空</button>
+        </div>
+
+        <!-- Main -->
+        <div class="main">
+            <!-- Nav Rail -->
+            <div class="nav-rail">
+                <button class="nav-btn" :class="{ active: currentView === 'column' }" @click="switchView('column')" title="列视图">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="12" rx="1"/></svg>
+                </button>
+                <button class="nav-btn" :class="{ active: currentView === 'tree' }" @click="switchView('tree')" title="树视图">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
+                </button>
+                <button class="nav-btn" :class="{ active: currentView === 'json' }" @click="switchView('json')" title="编辑器">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </button>
+                <div class="nav-sep"></div>
+                <button class="nav-btn" @click="showInfoPanel = !showInfoPanel" title="信息面板">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                </button>
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <div class="breadcrumb">
+                        <template v-for="(item, i) in breadcrumbs" :key="i">
+                            <span v-if="i > 0" class="breadcrumb-sep">/</span>
+                            <span class="breadcrumb-item" :class="{ active: i === breadcrumbs.length - 1 }" @click="navigateTo(item.path)">
+                                {{ item.label }}
+                            </span>
+                        </template>
+                    </div>
+                    <div class="search-trigger" @click="openSearch">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        搜索
+                        <kbd>⌘K</kbd>
+                    </div>
+                </div>
+
+                <!-- View Container -->
+                <div class="view-wrap">
+                    <!-- Column View -->
+                    <div v-show="currentView === 'column'" class="column-view">
+                        <template v-if="jsonData">
+                            <div v-for="(col, colIdx) in columnStack" :key="colIdx" class="column">
+                                <div class="col-header">
+                                    <span :style="{ color: 'var(--json-' + getType(col.value) + ')' }" v-html="getTypeIcon(getType(col.value))"></span>
+                                    {{ col.key }}
+                                </div>
+                                <template v-if="isObject(col.value)">
+                                    <div
+                                        v-for="(val, key) in col.value"
+                                        :key="key"
+                                        class="col-item"
+                                        :class="{ selected: isSelected(col.path.concat(key)) }"
+                                        @click="columnClick(colIdx, key)"
+                                    >
+                                        <span v-html="getTypeIcon(getType(val))" :style="{ color: 'var(--json-' + getType(val) + ')' }" class="tree-icon"></span>
+                                        <span class="col-item-key">{{ key }}</span>
+                                        <span v-if="!isContainer(val)" class="col-item-value">{{ truncate(val, 30) }}</span>
+                                        <template v-if="isContainer(val)">
+                                            <span class="col-item-count">{{ Array.isArray(val) ? val.length : Object.keys(val).length }}</span>
+                                            <span class="col-item-arrow" v-html="ICONS.chevron"></span>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template v-else-if="Array.isArray(col.value)">
+                                    <div
+                                        v-for="(val, idx) in col.value"
+                                        :key="idx"
+                                        class="col-item"
+                                        :class="{ selected: isSelected(col.path.concat(idx)) }"
+                                        @click="columnClick(colIdx, idx)"
+                                    >
+                                        <span v-html="getTypeIcon(getType(val))" :style="{ color: 'var(--json-' + getType(val) + ')' }" class="tree-icon"></span>
+                                        <span class="col-item-key">[{{ idx }}]</span>
+                                        <span v-if="!isContainer(val)" class="col-item-value">{{ truncate(val, 30) }}</span>
+                                        <template v-if="isContainer(val)">
+                                            <span class="col-item-count">{{ Array.isArray(val) ? val.length : Object.keys(val).length }}</span>
+                                            <span class="col-item-arrow" v-html="ICONS.chevron"></span>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template v-else>
+                                    <div class="col-item selected">
+                                        <span v-html="getTypeIcon(getType(col.value))" :style="{ color: 'var(--json-' + getType(col.value) + ')' }" class="tree-icon"></span>
+                                        <span class="col-item-value" :style="{ color: 'var(--json-' + getType(col.value) + ')', maxWidth: 'none' }">{{ col.value }}</span>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <div v-else class="empty-state">
+                            <div class="empty-state-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                            </div>
+                            <p>粘贴数据后点击「转换」</p>
+                            <p class="hint">支持 JSON / Python 字典 / 转义 JSON · Ctrl+Enter</p>
+                        </div>
+                    </div>
+
+                    <!-- Tree View -->
+                    <div v-show="currentView === 'tree'" class="tree-view">
+                        <div v-if="jsonData" v-html="renderTreeNodes(jsonData, [], 0)"></div>
+                    </div>
+
+                    <!-- JSON Editor -->
+                    <div v-show="currentView === 'json'" class="json-editor">
+                        <div v-if="jsonData" class="json-display">
+                            <div v-for="(line, i) in editorLines" :key="i" class="json-line">
+                                <span class="json-line-num">{{ i + 1 }}</span>
+                                <span class="json-line-content" v-html="highlightJson(line)"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Panel -->
+                    <div v-show="showInfoPanel" class="info-panel">
+                        <template v-if="jsonData">
+                            <div class="info-header">
+                                <div class="info-title">
+                                    <span v-html="getTypeIcon(getType(selectedValue))" :style="{ color: 'var(--json-' + getType(selectedValue) + ')' }" class="tree-icon"></span>
+                                    {{ selectedKeyName }}
+                                </div>
+                                <div class="info-meta">{{ getType(selectedValue) }}{{ selectedCount ? ' · ' + selectedCount + ' fields' : '' }}</div>
+                            </div>
+                            <div class="info-tabs">
+                                <div class="info-tab" :class="{ active: infoTab === 'json' }" @click="infoTab = 'json'">JSON</div>
+                                <div class="info-tab" :class="{ active: infoTab === 'schema' }" @click="infoTab = 'schema'">Schema</div>
+                            </div>
+                            <div class="info-content">
+                                <button class="copy-btn" :class="{ copied }" @click="copyNodeValue">
+                                    {{ copied ? '已复制' : '复制' }}
+                                </button>
+                                <div class="json-display">
+                                    <div v-for="(line, i) in infoLines" :key="i" class="json-line">
+                                        <span class="json-line-num">{{ i + 1 }}</span>
+                                        <span class="json-line-content" v-html="highlightJson(line)"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <div v-else class="empty-state" style="height:100%">
+                            <div class="empty-state-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            </div>
+                            <p>选择节点查看详情</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Overlay -->
+    <div class="search-overlay" :class="{ hidden: !showSearch }" @click.self="closeSearch">
+        <div class="search-box">
+            <div class="search-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="search-input" v-model="searchQuery" placeholder="搜索 key 或 value…" @input="onSearchInput" @keydown="onSearchKeydown">
+            </div>
+            <div class="search-results">
+                <div
+                    v-for="(m, i) in searchMatches"
+                    :key="i"
+                    class="search-result"
+                    :class="{ selected: i === searchIdx }"
+                    @click="selectSearchResult(i)"
+                >
+                    <span v-html="getTypeIcon(getType(m.value))" :style="{ color: 'var(--json-' + getType(m.value) + ')' }" class="tree-icon"></span>
+                    <div style="flex:1;overflow:hidden">
+                        <div class="search-result-path">{{ m.pathStr }}</div>
+                        <div class="search-result-value">{{ truncate(isContainer(m.value) ? (Array.isArray(m.value) ? 'Array' : 'Object') : String(m.value), 60) }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="search-hint">
+                <span><kbd>↑↓</kbd> 导航</span>
+                <span><kbd>Enter</kbd> 选择</span>
+                <span><kbd>Esc</kbd> 关闭</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/vue@3.4.38/dist/vue.global.prod.js"></script>
+<script>
+const { createApp, ref, computed, onMounted } = Vue;
+
+const app = createApp({
+    setup() {
+        // Icons
+        const ICONS = {
+            chevron: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>`,
+            object: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
+            array: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 8l-4 4 4 4"/><path d="M17 8l4 4-4 4"/><line x1="14" y1="4" x2="10" y2="20"/></svg>`,
+            string: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h8"/></svg>`,
+            number: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>`,
+            boolean: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+            null: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`,
+        };
+
+        function getTypeIcon(type) {
+            return `<span class="tree-icon" style="color:var(--json-${type})">${ICONS[type] || ''}</span>`;
+        }
+
+        // State
+        const input = ref('');
+        const jsonData = ref(null);
+        const currentView = ref('column');
+        const selectedPath = ref([]);
+        const columnStack = ref([]);
+        const treeExpanded = ref(new Set());
+        const showInfoPanel = ref(true);
+        const infoTab = ref('json');
+        const copied = ref(false);
+        const showSearch = ref(false);
+        const searchQuery = ref('');
+        const searchIdx = ref(-1);
+        const searchMatches = ref([]);
+
+        // Theme
+        const theme = ref(localStorage.getItem('theme') || 'system');
+        const resolvedTheme = ref('dark');
+        const themeLabel = computed(() => {
+            const map = { system: '跟随系统', light: '亮色模式', dark: '暗色模式' };
+            return '当前: ' + map[theme.value] + '，点击切换';
+        });
+
+        function applyTheme(t) {
+            if (t === 'system') {
+                t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            }
+            resolvedTheme.value = t;
+            document.documentElement.setAttribute('data-theme', t);
+            document.body.setAttribute('arco-theme', t);
+        }
+        function saveAndApply() {
+            localStorage.setItem('theme', theme.value);
+            applyTheme(theme.value);
+        }
+        function toggleTheme() {
+            const order = ['system', 'light', 'dark'];
+            const next = order[(order.indexOf(theme.value) + 1) % 3];
+            theme.value = next;
+            saveAndApply();
+        }
+
+        // Helpers
+        function getType(v) {
+            if (v === null) return 'null';
+            if (Array.isArray(v)) return 'array';
+            return typeof v;
+        }
+        function isContainer(v) { return v !== null && typeof v === 'object'; }
+        function isObject(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
+        function getValueAt(obj, path) {
+            let cur = obj;
+            for (const k of path) { if (cur == null) return undefined; cur = cur[k]; }
+            return cur;
+        }
+        function isSelected(path) { return JSON.stringify(path) === JSON.stringify(selectedPath.value); }
+        function truncate(s, max) { s = String(s); return s.length > max ? s.substring(0, max) + '…' : s; }
+        function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        // Python Dict → JSON
+        function pyDictToJson(text) {
+            let result = '', i = 0;
+            while (i < text.length) {
+                let ch = text[i];
+                if (ch === '"') {
+                    let j = i + 1;
+                    while (j < text.length && text[j] !== '"') { if (text[j] === '\\') j++; j++; }
+                    result += text.substring(i, j + 1); i = j + 1;
+                } else if (ch === "'") {
+                    let j = i + 1, inner = '';
+                    while (j < text.length && text[j] !== "'") {
+                        if (text[j] === '"') inner += '\\"';
+                        else if (text[j] === '\\') { inner += text[j]; j++; if (j < text.length) inner += text[j]; }
+                        else if (text[j] === '\n') inner += '\\n';
+                        else if (text[j] === '\r') {}
+                        else inner += text[j];
+                        j++;
+                    }
+                    result += '"' + inner + '"'; i = j + 1;
+                } else { result += ch; i++; }
+            }
+            return result;
+        }
+
+        function convert() {
+            const text = input.value.trim();
+            if (!text) return;
+            const attempts = [
+                () => JSON.parse(text),
+                () => { let p = text.replace(/None/g,'null').replace(/True/g,'true').replace(/False/g,'false'); return JSON.parse(pyDictToJson(p)); },
+                () => { let t = text.replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\r/g,'\r').replace(/\\"/g,'"').replace(/\\\\/g,'\\'); return JSON.parse(t); },
+            ];
+            for (const attempt of attempts) {
+                try {
+                    const result = attempt();
+                    if (result && typeof result === 'object') {
+                        jsonData.value = result;
+                        selectedPath.value = [];
+                        columnStack.value = [{ key: 'root', value: result, path: [] }];
+                        treeExpanded.value = new Set();
+                        expandToDepth(result, [], 2);
+                        return;
+                    }
+                } catch (e) {}
+            }
+        }
+
+        function expandToDepth(obj, path, depth) {
+            if (depth <= 0 || !isContainer(obj)) return;
+            const keys = Array.isArray(obj) ? obj.map((_, i) => i) : Object.keys(obj);
+            for (const k of keys) { treeExpanded.value.add(path.concat(k).join('.')); expandToDepth(obj[k], path.concat(k), depth - 1); }
+        }
+
+        function copyJson() { if (jsonData.value) navigator.clipboard.writeText(JSON.stringify(jsonData.value, null, 2)); }
+        function clearAll() { input.value = ''; jsonData.value = null; selectedPath.value = []; columnStack.value = []; }
+        function switchView(view) { currentView.value = view; }
+
+        const breadcrumbs = computed(() => {
+            if (!jsonData.value) return [{ label: 'root', path: [] }];
+            const items = [{ label: 'root', path: [] }];
+            selectedPath.value.forEach((k, i) => items.push({ label: k, path: selectedPath.value.slice(0, i + 1) }));
+            return items;
+        });
+
+        function navigateTo(path) {
+            selectedPath.value = path.slice();
+            columnStack.value = [{ key: 'root', value: jsonData.value, path: [] }];
+            let cur = jsonData.value;
+            for (const k of path) { if (!isContainer(cur)) break; columnStack.value.push({ key: k, value: cur[k], path: columnStack.value[columnStack.value.length - 1].path.concat(k) }); cur = cur[k]; }
+        }
+
+        function columnClick(colIdx, key) {
+            columnStack.value = columnStack.value.slice(0, colIdx + 1);
+            const parent = columnStack.value[columnStack.value.length - 1];
+            if (isContainer(parent.value)) {
+                const childPath = parent.path.concat(key);
+                columnStack.value.push({ key, value: parent.value[key], path: childPath });
+                selectedPath.value = childPath.slice();
+            }
+        }
+
+        const selectedValue = computed(() => jsonData.value ? (selectedPath.value.length > 0 ? getValueAt(jsonData.value, selectedPath.value) : jsonData.value) : null);
+        const selectedKeyName = computed(() => selectedPath.value.length > 0 ? selectedPath.value[selectedPath.value.length - 1] : 'root');
+        const selectedCount = computed(() => selectedValue.value && isContainer(selectedValue.value) ? (Array.isArray(selectedValue.value) ? selectedValue.value.length : Object.keys(selectedValue.value).length) : 0);
+
+        function renderTreeNodes(obj, path, depth) {
+            if (!isContainer(obj)) return '';
+            const keys = Array.isArray(obj) ? obj.map((_, i) => i) : Object.keys(obj);
+            let html = '<div class="tree-children">';
+            keys.forEach(k => {
+                const v = obj[k], vType = getType(v), childPath = path.concat(k), pathStr = childPath.join('.');
+                const isCont = isContainer(v), isExp = treeExpanded.value.has(pathStr), isSel = JSON.stringify(childPath) === JSON.stringify(selectedPath.value);
+                const count = isCont ? (Array.isArray(v) ? v.length : Object.keys(v).length) : 0;
+                html += `<div class="tree-node"><div class="tree-row ${isSel?'selected':''}" onclick="window.__treeSelect('${pathStr}')" ondblclick="window.__treeToggle('${pathStr}')">`;
+                for (let d = 0; d < depth; d++) html += `<span class="tree-indent d${d%6}"></span>`;
+                html += isCont ? `<span class="tree-toggle ${isExp?'expanded':''}" onclick="event.stopPropagation();window.__treeToggle('${pathStr}')">${ICONS.chevron}</span>` : `<span class="tree-toggle empty"></span>`;
+                html += `<span class="tree-icon" style="color:var(--json-${vType})">${ICONS[vType]||''}</span>`;
+                html += `<span class="tree-key">${Array.isArray(obj)?'['+k+']':escapeHtml(String(k))}</span><span class="tree-colon">:</span>`;
+                html += isCont ? `<span class="tree-meta">${count}</span>` : `<span class="tree-value ${vType}">${escapeHtml(vType==='string'?'"'+truncate(v,60)+'"':String(v))}</span>`;
+                html += `</div>`;
+                if (isCont) html += `<div class="tree-children ${isExp?'':'collapsed'}">${renderTreeNodes(v, childPath, depth + 1)}</div>`;
+                html += `</div>`;
+            });
+            return html + '</div>';
+        }
+
+        const editorLines = computed(() => {
+            if (!jsonData.value) return [];
+            const value = selectedPath.value.length > 0 ? getValueAt(jsonData.value, selectedPath.value) : jsonData.value;
+            return JSON.stringify(value, null, 2).split('\n');
+        });
+
+        const infoLines = computed(() => {
+            if (!selectedValue.value) return [];
+            const val = infoTab.value === 'json' ? selectedValue.value : generateSchema(selectedValue.value);
+            return JSON.stringify(val, null, 2).split('\n');
+        });
+
+        function generateSchema(value) {
+            if (value === null) return { type: 'null' };
+            if (Array.isArray(value)) return value.length === 0 ? { type: 'array', items: {} } : { type: 'array', items: generateSchema(value[0]) };
+            if (typeof value === 'object') { const p = {}; for (const [k, v] of Object.entries(value)) p[k] = generateSchema(v); return { type: 'object', properties: p }; }
+            return { type: typeof value };
+        }
+
+        function copyNodeValue() {
+            if (!selectedValue.value) return;
+            const text = infoTab.value === 'json'
+                ? (isContainer(selectedValue.value) ? JSON.stringify(selectedValue.value, null, 2) : String(selectedValue.value))
+                : JSON.stringify(generateSchema(selectedValue.value), null, 2);
+            navigator.clipboard.writeText(text);
+            copied.value = true;
+            setTimeout(() => copied.value = false, 1500);
+        }
+
+        function highlightJson(line) {
+            return escapeHtml(line)
+                .replace(/"([^"\\]*(\\.[^"\\]*)*)"\s*:/g, '<span class="json-key">"$1"</span>:')
+                .replace(/:\s*"([^"\\]*(\\.[^"\\]*)*)"/g, ': <span class="json-string">"$1"</span>')
+                .replace(/:\s*(\d+\.?\d*)/g, ': <span class="json-number">$1</span>')
+                .replace(/:\s*(true|false)/g, ': <span class="json-boolean">$1</span>')
+                .replace(/:\s*(null)/g, ': <span class="json-null">$1</span>')
+                .replace(/([{}\[\]])/g, '<span class="json-bracket">$1</span>');
+        }
+
+        function openSearch() { showSearch.value = true; searchQuery.value = ''; searchIdx.value = -1; searchMatches.value = []; }
+        function closeSearch() { showSearch.value = false; }
+        function onSearchInput() {
+            const q = searchQuery.value.trim().toLowerCase();
+            if (!q || !jsonData.value) { searchMatches.value = []; return; }
+            searchMatches.value = []; searchTree(jsonData.value, [], q);
+            searchIdx.value = searchMatches.value.length > 0 ? 0 : -1;
+        }
+        function searchTree(obj, path, query) {
+            if (searchMatches.value.length > 200) return;
+            if (isContainer(obj)) {
+                const keys = Array.isArray(obj) ? obj.map((_, i) => i) : Object.keys(obj);
+                for (const k of keys) {
+                    const childPath = path.concat(k), pathStr = '$.' + childPath.join('.');
+                    if (String(k).toLowerCase().includes(query) || (!isContainer(obj[k]) && String(obj[k]).toLowerCase().includes(query)))
+                        searchMatches.value.push({ path: childPath, pathStr, value: obj[k] });
+                    searchTree(obj[k], childPath, query);
+                }
+            }
+        }
+        function selectSearchResult(idx) {
+            const m = searchMatches.value[idx];
+            if (m) {
+                selectedPath.value = m.path.slice();
+                columnStack.value = [{ key: 'root', value: jsonData.value, path: [] }];
+                let cur = jsonData.value;
+                for (const k of selectedPath.value) { if (!isContainer(cur)) break; columnStack.value.push({ key: k, value: cur[k], path: columnStack.value[columnStack.value.length - 1].path.concat(k) }); cur = cur[k]; }
+                for (let i = 1; i <= selectedPath.value.length; i++) treeExpanded.value.add(selectedPath.value.slice(0, i).join('.'));
+                closeSearch();
+            }
+        }
+        function onSearchKeydown(e) {
+            if (e.key === 'Escape') closeSearch();
+            else if (e.key === 'ArrowDown') { e.preventDefault(); searchIdx.value = Math.min(searchIdx.value + 1, searchMatches.value.length - 1); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); searchIdx.value = Math.max(searchIdx.value - 1, 0); }
+            else if (e.key === 'Enter') { e.preventDefault(); if (searchIdx.value >= 0) selectSearchResult(searchIdx.value); }
+        }
+
+        window.__treeSelect = (pathStr) => {
+            selectedPath.value = pathStr ? pathStr.split('.') : [];
+            columnStack.value = [{ key: 'root', value: jsonData.value, path: [] }];
+            let cur = jsonData.value;
+            for (const k of selectedPath.value) { if (!isContainer(cur)) break; columnStack.value.push({ key: k, value: cur[k], path: columnStack.value[columnStack.value.length - 1].path.concat(k) }); cur = cur[k]; }
+        };
+        window.__treeToggle = (pathStr) => { treeExpanded.value.has(pathStr) ? treeExpanded.value.delete(pathStr) : treeExpanded.value.add(pathStr); };
+
+        onMounted(() => {
+            applyTheme(theme.value);
+            // Listen for system theme changes
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+                if (theme.value === 'system') applyTheme('system');
+            });
+            document.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+                if (e.altKey && !e.ctrlKey && !e.metaKey) {
+                    if (e.key === '1') { e.preventDefault(); switchView('column'); }
+                    if (e.key === '2') { e.preventDefault(); switchView('tree'); }
+                    if (e.key === '3') { e.preventDefault(); switchView('json'); }
+                }
+            });
+        });
+
+        return {
+            ICONS, getTypeIcon, input, jsonData, currentView, selectedPath, columnStack,
+            treeExpanded, showInfoPanel, infoTab, copied, showSearch, searchQuery, searchIdx,
+            searchMatches, theme, resolvedTheme, themeLabel, toggleTheme, getType, isContainer, isObject, isSelected, truncate, escapeHtml,
+            convert, copyJson, clearAll, switchView, breadcrumbs, navigateTo, columnClick,
+            selectedValue, selectedKeyName, selectedCount, renderTreeNodes, editorLines, infoLines,
+            generateSchema, copyNodeValue, highlightJson, openSearch, closeSearch, onSearchInput,
+            selectSearchResult, onSearchKeydown,
+        };
+    }
+});
+
+app.mount('#app');
+</script>
+</body>
+</html>
