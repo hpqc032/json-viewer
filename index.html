@@ -1068,19 +1068,40 @@ const app = createApp({
             return result;
         }
 
+        function unescapeStr(s) {
+            return s.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\r/g, '\r').replace(/\\"/g, '"').replace(/\\'/g, "'");
+        }
+        function unescapeDeep(obj) {
+            if (typeof obj === 'string') {
+                const unescaped = unescapeStr(obj);
+                const trimmed = unescaped.trim();
+                if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && trimmed.length > 2) {
+                    try { return JSON.parse(trimmed); } catch(e) {}
+                }
+                return unescaped;
+            }
+            if (Array.isArray(obj)) return obj.map(unescapeDeep);
+            if (obj !== null && typeof obj === 'object') {
+                const r = {};
+                for (const [k, v] of Object.entries(obj)) r[k] = unescapeDeep(v);
+                return r;
+            }
+            return obj;
+        }
         function convert() {
             const text = input.value.trim();
             if (!text) return;
             const attempts = [
                 () => JSON.parse(text),
                 () => { let p = text.replace(/None/g,'null').replace(/True/g,'true').replace(/False/g,'false'); return JSON.parse(pyDictToJson(p)); },
-                () => { let t = text.replace(/\\n/g,'\n').replace(/\\t/g,'\t').replace(/\\r/g,'\r').replace(/\\"/g,'"').replace(/\\\\/g,'\\'); return JSON.parse(t); },
+                () => { let t = unescapeStr(text); return JSON.parse(t); },
+                () => { let p = unescapeStr(text).replace(/None/g,'null').replace(/True/g,'true').replace(/False/g,'false'); return JSON.parse(pyDictToJson(p)); },
             ];
             for (const attempt of attempts) {
                 try {
                     const result = attempt();
                     if (result && typeof result === 'object') {
-                        jsonData.value = result;
+                        jsonData.value = unescapeDeep(result);
                         selectedPath.value = [];
                         columnStack.value = [{ key: 'root', value: result, path: [] }];
                         treeExpanded.value = new Set();
